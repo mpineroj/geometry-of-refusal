@@ -1,0 +1,106 @@
+Repo: The Geometry of Refusal in Large Language Models
+=====================================================
+
+Code for the paper on concept cones and representational independence
+in LLM refusal behavior (arXiv:2502.17420).
+
+
+Top-level modules
+-----------------
+
+rdo.py
+  Main training script for Refusal Direction Optimization (RDO). Trains
+  single refusal directions, orthogonal directions, independent directions,
+  and refusal cones. Uses nnsight for model intervention and logs to W&B.
+
+scoring.py
+  Defines the refusal metric -- checks if model outputs match known refusal
+  prefixes ("I'm sorry", "I cannot", etc.) and computes projection-based scores.
+
+generate_utils.py
+  Utilities for generation with interventions -- vector ablation, vector
+  addition, and projection operations using einops.
+
+cosinesim_analysis.py
+  Analyzes cosine similarities between DIM directions and representational
+  independence directions.
+
+monotonic_scaling_property.py
+  Tests the monotonic scaling property of refusal directions.
+
+plots.py
+  Visualization / plotting code for paper figures.
+
+plot_style.py
+  Shared matplotlib styling config.
+
+
+refusal_direction/ -- DIM Direction Pipeline
+--------------------------------------------
+
+Based on andyrdt/refusal_direction (https://github.com/andyrdt/refusal_direction).
+
+pipeline/run_pipeline.py
+  End-to-end pipeline: loads harmful/harmless datasets, extracts activations,
+  generates candidate directions (PCA/mean-diff), selects the best one, and
+  evaluates jailbreak + loss.
+
+pipeline/run_rdo_pipeline.py
+  Evaluates RDO/cone directions stored in a W&B run.
+
+pipeline/run_rdo_samples.py
+  Evaluates Monte Carlo samples within a refusal cone.
+
+pipeline/config.py
+  Pipeline configuration class.
+
+pipeline/submodules/generate_directions.py
+  Generates candidate refusal directions via PCA and mean-difference methods.
+
+pipeline/submodules/select_direction.py
+  Selects the best refusal direction from candidates.
+
+pipeline/submodules/evaluate_jailbreak.py
+  Evaluates jailbreak success rates for a given direction.
+
+pipeline/submodules/evaluate_loss.py
+  Evaluates model loss impact of direction ablation.
+
+pipeline/model_utils/model_base.py
+  Shared base interface for model wrappers.
+
+pipeline/model_utils/model_factory.py
+  Factory pattern for constructing model-specific wrappers.
+
+pipeline/model_utils/gemma_model.py
+  Gemma model wrapper.
+
+pipeline/model_utils/llama3_model.py
+  Llama 3 model wrapper.
+
+pipeline/model_utils/qwen_model.py
+  Qwen model wrapper.
+
+pipeline/utils/hook_utils.py
+  Hook utilities for activation interventions (ablation, addition).
+
+pipeline/utils/utils.py
+  General helper functions.
+
+dataset/load_dataset.py
+  Loads harmful/harmless instruction datasets from data/.
+
+
+data/
+-----
+
+Contains the harmful and harmless prompt datasets used for training and evaluation.
+
+
+Workflow
+--------
+
+1. Compute DIM directions via refusal_direction/pipeline/run_pipeline.py
+2. Train RDO directions/cones via rdo.py
+3. Evaluate via run_rdo_pipeline.py / run_rdo_samples.py
+4. Analyze and plot via cosinesim_analysis.py, monotonic_scaling_property.py, plots.py

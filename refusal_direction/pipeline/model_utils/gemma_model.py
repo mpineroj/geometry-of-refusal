@@ -3,7 +3,7 @@ import torch
 import functools
 import os
 
-from torch import Tensor
+from torch import Tensor, backends
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from typing import List
 from jaxtyping import Float
@@ -89,7 +89,7 @@ class GemmaModel(ModelBase):
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=dtype,
-            device_map="cuda",
+            device_map="mps" if torch.backends.mps.is_available() else "auto",
             cache_dir=os.getenv("HUGGINGFACE_CACHE_DIR"),
         ).eval()
 

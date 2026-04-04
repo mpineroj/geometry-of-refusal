@@ -6,8 +6,8 @@ from typing import Tuple
 
 @dataclass
 class Config:
-    model_alias: str
-    model_path: str
+    model_alias: str = "qwen2.5-b"
+    model_path: str = "Qwen/Qwen2.5-B-Instruct"
     n_test: int = 128
     splits: str = "saladbench"
     sample: bool = False
@@ -24,7 +24,7 @@ class Config:
     max_new_tokens: int = 512
     completions_batch_size: int = 128
 
-    jailbreak_eval_methodologies: Tuple[str] = ("substring_matching", "strongreject")
+    jailbreak_eval_methodologies: Tuple[str] = ("substring_matching",)
     refusal_eval_methodologies: Tuple[str] = ("substring_matching",)
     ce_loss_batch_size: int = 2
     ce_loss_n_batches: int = 2048

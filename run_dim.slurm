@@ -23,9 +23,9 @@
 ###############################################################################
 
 # --- Partition (uncomment ONE, check with: sshare -u $USER) ---
-# SBATCH --partition=gpu
+#SBATCH --partition=gpu
 # #SBATCH --partition=mig
-# SBATCH --constraint=a100
+#SBATCH --constraint=a100
 
 ###############################################################################
 # Environment setup
@@ -45,12 +45,12 @@ module load anaconda3/2024.2
 # module load cudatoolkit/12.2    # often auto-loaded with anaconda
 
 # Activate conda env
-# First-time setup:
-#   conda create -n refusal python=3.10 pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
-#   conda activate refusal
-#   pip install transformers accelerate datasets python-dotenv jaxtyping einops wandb
-#   pip install strong-reject    # optional, only for StrongREJECT eval
 conda activate rdo        
+
+# Offline mode + Python path
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export PYTHONPATH="/home/${USER}/geometry-of-refusal:${PYTHONPATH}"
 
 # HuggingFace cache -> scratch
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
@@ -125,3 +125,5 @@ for k, v in d.items():
         fi
     done
 fi
+
+

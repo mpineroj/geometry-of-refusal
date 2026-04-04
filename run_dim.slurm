@@ -6,91 +6,52 @@
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
-
-###############################################################################
-# DIM Pipeline -- Qwen2.5-3B-Instruct on Princeton Adroit
-#
-# Usage:
-#   mkdir -p logs
-#   sbatch run_dim_della.slurm
-#
-# BEFORE FIRST RUN -- check/adjust these:
-#   1. Partition: uncomment the right line below for your allocation
-#   2. GPU type: A100 preferred, V100-32GB also works for DIM
-#   3. Module loads: check `module avail` for exact names
-#   4. Conda env: adjust the env name or use venv instead
-#   5. HuggingFace cache: point to scratch so weights aren't in /home
-###############################################################################
-
-# --- Partition (uncomment ONE, check with: sshare -u $USER) ---
 #SBATCH --partition=gpu
-# #SBATCH --partition=mig
 #SBATCH --constraint=a100
-
-###############################################################################
-# Environment setup
-###############################################################################
 
 echo "=========================================="
 echo "Job ID:       $SLURM_JOB_ID"
 echo "Node:         $SLURM_NODELIST"
 echo "GPUs:         $SLURM_GPUS_ON_NODE"
 echo "Start time:   $(date)"
-echo "Working dir:  $(pwd)"
 echo "=========================================="
 
-# Load modules -- adjust versions with `module avail anaconda` / `module avail cuda`
 module purge
 module load anaconda3/2024.2
-# module load cudatoolkit/12.2    # often auto-loaded with anaconda
 
-# Activate conda env
-conda activate rdo        
+conda activate rdo
 
-# Offline mode + Python path
 export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-export PYTHONPATH="/home/${USER}/geometry-of-refusal:${PYTHONPATH}"
-
-# HuggingFace cache -> scratch
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
 export HF_HOME="${HUGGINGFACE_CACHE_DIR}"
 export TRANSFORMERS_CACHE="${HUGGINGFACE_CACHE_DIR}"
 mkdir -p "${HUGGINGFACE_CACHE_DIR}"
 
-# Pipeline output directories
 export SAVE_DIR="results"
 export DIM_DIR="dim_directions"
 
-# Repo directory
-cd /home/${USER}/geometry-of-refusal
+REPO_ROOT="/home/${USER}/geometry-of-refusal"
 
-mkdir -p "${SAVE_DIR}/${DIM_DIR}"
-mkdir -p logs
+cd "${REPO_ROOT}/refusal_direction"
+export PYTHONPATH="${REPO_ROOT}/refusal_direction:${PYTHONPATH}"
 
-###############################################################################
-# Pre-flight checks
-###############################################################################
+mkdir -p "${REPO_ROOT}/logs"
 
 echo ""
 echo "Pre-flight checks:"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
-echo ""
 python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA: {torch.cuda.is_available()}, GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
-python -c "import transformers; print(f'Transformers {transformers.__version__}')"
 
 echo ""
-for f in data/saladbench_splits/harmful_train.json data/saladbench_splits/harmless_train.json dataset/processed/jailbreakbench.json; do
+for f in "${REPO_ROOT}/data/saladbench_splits/harmful_train.json" \
+         "${REPO_ROOT}/data/saladbench_splits/harmless_train.json" \
+         "${REPO_ROOT}/refusal_direction/dataset/processed/jailbreakbench.json"; do
     if [ -f "$f" ]; then
-        echo "  OK: $f"
+        echo "  OK: $(basename $f)"
     else
-        echo "  MISSING: $f -- pipeline will fail"
+        echo "  MISSING: $f"
     fi
 done
-
-###############################################################################
-# Run
-###############################################################################
 
 echo ""
 echo "=========================================="
@@ -105,8 +66,7 @@ echo "=========================================="
 echo "Pipeline complete at $(date)"
 echo "=========================================="
 
-# Print results summary
-EVAL_DIR="${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/completions"
+EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/completions"
 if [ -d "$EVAL_DIR" ]; then
     echo ""
     echo "Results:"
@@ -125,5 +85,3 @@ for k, v in d.items():
         fi
     done
 fi
-
-

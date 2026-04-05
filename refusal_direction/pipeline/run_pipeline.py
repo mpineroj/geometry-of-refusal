@@ -93,6 +93,7 @@ def select_and_save_direction(cfg, model_base, harmful_val, harmless_val, candid
         harmful_val,
         harmless_val,
         candidate_directions,
+        kl_threshold=cfg.kl_threshold,
         artifact_dir=os.path.join(cfg.artifact_path(), "select_direction")
     )
 

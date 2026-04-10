@@ -31,6 +31,8 @@ cd "${REPO_ROOT}"
 
 export SAVE_DIR="results"
 export DIM_DIR="dim_directions"
+export WANDB_MODE=offline
+
 
 echo ""
 echo "Pre-flight checks:"

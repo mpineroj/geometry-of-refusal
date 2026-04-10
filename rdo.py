@@ -1406,6 +1406,13 @@ def repind_rdo(model,
         torch.save(lowest_loss_vector, f)
     wandb.log_artifact(artifact)
 
+    # Also save locally for offline access
+    local_save_dir = f"{os.getenv('SAVE_DIR')}/rdo/{MODEL_PATH.split('/')[-1]}/vectors"
+    os.makedirs(local_save_dir, exist_ok=True)
+    torch.save(save_vectors, f"{local_save_dir}/vectors_{run_id}.pt")
+    torch.save(lowest_loss_vector, f"{local_save_dir}/lowest_loss_vector_{run_id}.pt")
+    print(f"Vectors saved locally to {local_save_dir}")
+
     return {"vectors": save_vectors, "lowest_loss_vector": lowest_loss_vector}
 
 # %%

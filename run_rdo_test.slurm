@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=gpu
-#SBATCH --constraint=a100
+#SBATCH --constraint=gpu80
 
 echo "=========================================="
 echo "Job ID:       $SLURM_JOB_ID"

@@ -992,7 +992,7 @@ def train_refusal_vector(group_name=None, run_name=None, orthogonal_vectors=[], 
                    config=wandb_config,
                    group=f"{group_name}_{model_id}",
                    name=run_name,
-                   mode="online"):
+                   mode=os.getenv("WANDB_MODE", "online")):
 
         # Run optimization, passing only necessary/overridden args
         results = refusal_cone_optimization(
@@ -1071,7 +1071,7 @@ def train_refusal_cone(group_name, run_name, init_vectors, **kwargs):
                    config=wandb_config,
                    group=f"{group_name}_{model_id}",
                    name=run_name,
-                   mode="online"):
+                   mode=os.getenv("WANDB_MODE", "online")):
 
         # Run optimization, passing only necessary/overridden args
         results = refusal_cone_optimization(
@@ -1432,7 +1432,7 @@ def train_independent_vector(group_name=None, run_name=None, independent_vectors
                    config=wandb_config,
                    group=f"{group_name}_{model_id}",
                    name=run_name,
-                   mode="online"):
+                   mode=os.getenv("WANDB_MODE", "online")):
         results = repind_rdo(
             model=model,
             train_dataset=train_dataset,

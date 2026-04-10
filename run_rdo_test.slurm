@@ -20,7 +20,7 @@ module load anaconda3/2024.2
 
 conda activate rdo
 
-export HF_HUB_OFFLINE=1
+# HF_HUB_OFFLINE disabled — nnsight needs cache lookup without strict offline mode
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
 export HF_HOME="${HUGGINGFACE_CACHE_DIR}"
 export TRANSFORMERS_CACHE="${HUGGINGFACE_CACHE_DIR}"

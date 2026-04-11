@@ -86,12 +86,16 @@ def main():
     alpha = dim_direction.norm().item()
     print(f"  Alpha (DIM direction norm): {alpha:.4f}")
 
-    # Prepare hooks for interventions
+   
+   # Setup hooks
+    baseline_hooks = ([], [])
+    ablation_hooks = get_all_direction_ablation_hooks(model_base, direction)
     actadd_hooks = (
         [(model_base.model_block_modules[add_layer],
         get_activation_addition_input_pre_hook(vector=direction * alpha, coeff=-1.0))],
         []
     )
+
 
     # Generate completions for each intervention
     interventions = {

@@ -81,12 +81,15 @@ def main():
     eval_dataset = load_dataset("jailbreakbench")
     print(f"  {len(eval_dataset)} prompts")
 
-    # Setup hooks
-    baseline_hooks = ([], [])
-    ablation_hooks = get_all_direction_ablation_hooks(model_base, direction)
+    # Load alpha (norm of DIM direction) for proper scaling
+    dim_direction = torch.load(os.path.join(os.path.dirname(args.dim_metadata_path), "direction.pt"), map_location='cpu')
+    alpha = dim_direction.norm().item()
+    print(f"  Alpha (DIM direction norm): {alpha:.4f}")
+
+    # Prepare hooks for interventions
     actadd_hooks = (
         [(model_base.model_block_modules[add_layer],
-          get_activation_addition_input_pre_hook(vector=direction, coeff=-1.0))],
+        get_activation_addition_input_pre_hook(vector=direction * alpha, coeff=-1.0))],
         []
     )
 

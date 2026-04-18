@@ -61,11 +61,10 @@ def main():
     add_layer = metadata["layer"]
     print(f"  Using layer: {add_layer}")
 
-    # Setup output directory
+    # Setup output directory — unique per vector file
     if args.output_dir is None:
-        args.output_dir = os.path.join(os.path.dirname(args.vector_path), "eval_results")
-    os.makedirs(args.output_dir, exist_ok=True)
-    os.makedirs(os.path.join(args.output_dir, "completions"), exist_ok=True)
+        vector_name = os.path.splitext(os.path.basename(args.vector_path))[0]
+        args.output_dir = os.path.join(os.path.dirname(args.vector_path), f"eval_{vector_name}")
 
     # Load model
     model_alias = os.path.basename(args.model_path)

@@ -43,7 +43,7 @@ python rdo.py \
     --model Qwen/Qwen2.5-3B-Instruct \
     --train_cone \
     --min_cone_dim 2 \
-    --max_cone_dim 4 \
+    --max_cone_dim 6 \
     --epochs 1 \
     --lr 0.01 \
     --batch_size 1 \

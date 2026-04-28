@@ -1,3 +1,10 @@
+"""
+Evaluates a subset of sampled refusal direction vectors (RDO samples) from a W&B run.
+Downloads cone samples from the specified run, then generates and evaluates completions
+for each vector using activation addition and direction ablation interventions.
+"""
+
+
 import torch
 import random
 import json

@@ -26,7 +26,7 @@ set_seed(42)
 # Default configuration values
 DEFAULT_CONFIG = {
     # Model settings
-    'model': 'google/gemma-2-2b-it',  # Model identifier from HuggingFace
+    'model': 'Qwen/Qwen2.5-3B-Instruct',  # Model identifier from HuggingFace
     'dtype': 'bfloat16',              # Floating point precision (bfloat16, float16, float32)
     
     # Training objectives

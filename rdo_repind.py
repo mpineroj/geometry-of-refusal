@@ -71,7 +71,7 @@ def parse_args():
         argparse.Namespace: Parsed arguments with default values if not specified.
     """
     # If running in interactive mode
-    if not sys.argv[0].endswith('rdo.py'):
+    if not (sys.argv[0].endswith('rdo.py') or sys.argv[0].endswith('rdo_repind.py')):
         return argparse.Namespace(**DEFAULT_CONFIG)
     
     # If running from command line

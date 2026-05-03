@@ -66,7 +66,7 @@ echo "=========================================="
 echo "Pipeline complete at $(date)"
 echo "=========================================="
 
-EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/rpawar7156/qwen2.5-3b-er/completions"
+EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/Qwen/Qwen2.5-3B-Instruct-ER/completions"
 if [ -d "$EVAL_DIR" ]; then
     echo ""
     echo "Results:"

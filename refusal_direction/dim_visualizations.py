@@ -4,7 +4,6 @@ Adapted with --viz flag to produce DIM visualization figures.
 
 New flags:
   --viz                Produce visualization after Stage 3
-  --viz_out PATH       Where to save the figure (default: dim_visualization.png)
   --viz_position INT   Position index into mean_diffs (default: 0 = -n_eoi_toks)
 
 Usage:
@@ -53,6 +52,9 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     from sklearn.decomposition import PCA
+
+    # if save path doesn't exist, create directory
+    os.makedirs(os.path.dirname(save_path), exist_ok=True) 
 
     # ── 1. Slice position → (n_layers, d_model) ───────────────────────────────
     # generate_directions always returns Tensor (n_positions, n_layers, d_model).
@@ -121,9 +123,11 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
         mh, ms = _mean_proj(layer)
         mid = (np.array(mh) + np.array(ms)) / 2
 
-        # Pad = 60% of current layer norm mapped to PCA units; use max-norm layer
-        # as reference so early layers show small arrows in proportional space.
-        pad = 0.6 * (dim_norms[layer] / max_norm) * np.linalg.norm(np.array(mh) - np.array(ms)) + 0.5
+        # Pad purely as a multiple of projected distance so the arrow fills
+        # ~40% of each panel regardless of absolute scale.
+        # Magnitude comparison is handled by the ‖Δμ‖ norm in the title.
+        dist = np.linalg.norm(np.array(mh) - np.array(ms))
+        pad = max(dist * 1.5, 0.5)
         ax.set_xlim(mid[0] - pad, mid[0] + pad)
         ax.set_ylim(mid[1] - pad, mid[1] + pad)
 
@@ -166,10 +170,10 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
     ax_n.text(selected_layer + 0.5, dim_norms[selected_layer] * 0.93,
               f'Selected: layer {selected_layer}', color=C_DIM, fontsize=8)
     # Annotate that selection is by KL+ASR criteria, not just argmax norm
-    ax_n.text(0.98, 0.97,
-              'Selection: ablation ASR + actadd ASR + KL ≤ threshold\n(not argmax norm)',
+    ax_n.text(0.02, 0.04,
+              'Selected by: ablation ASR + actadd ASR + KL ≤ threshold  (not argmax norm)',
               transform=ax_n.transAxes, color='#888888', fontsize=7,
-              ha='right', va='top', style='italic')
+              ha='left', va='bottom', style='italic')
     ax_n.set_xlabel('Layer', color='#888888', fontsize=9)
     ax_n.set_ylabel('Vector norm', color='#888888', fontsize=9)
 
@@ -217,8 +221,6 @@ def parse_arguments():
                         help='Skip direction generation (just test filtering)')
     parser.add_argument('--viz', action='store_true',
                         help='Produce DIM visualization after Stage 3')
-    parser.add_argument('--viz_out', type=str, default='dim_visualization.png',
-                        help='Output path for visualization PNG (default: dim_visualization.png)')
     parser.add_argument('--selected_layer', type=int, default=None,
                         help='Override selected layer for viz (default: argmax of norms)')
     parser.add_argument('--viz_position', type=int, default=0,
@@ -396,7 +398,7 @@ def main():
             mean_diffs=mean_diffs,
             selected_layer=args.selected_layer,
             viz_position=args.viz_position,
-            save_path=args.viz_out,
+            save_path= "results/dim_visualization_" + model_alias + ".png"
         )
 
     # ==================================================================
@@ -410,7 +412,7 @@ def main():
   Dataset loading:           OK
   Refusal score computation: OK
   Direction generation:      OK ({n_candidates} candidates)
-  Visualization:             {'OK → ' + args.viz_out if args.viz else 'skipped (pass --viz)'}
+  Visualization:             {'OK → ' + os.path.join(artifact_dir, 'dim_visualization.png') if args.viz else 'SKIPPED (use --viz)'}
 
   Skipped (expensive): direction selection, completion generation, evaluation.
   These test ~{n_candidates} candidates x 128 val prompts each -> run on Adroit.

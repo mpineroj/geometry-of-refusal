@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=dim-qwen2.5-3b-er
-#SBATCH --output=logs/dim-qwen2.5-3b-er-%j.out
-#SBATCH --error=logs/dim-qwen2.5-3b-er-%j.err
+#SBATCH --job-name=dim-qwen2.5-3b
+#SBATCH --output=logs/dim-qwen2.5-3b-%j.out
+#SBATCH --error=logs/dim-qwen2.5-3b-%j.err
 #SBATCH --time=03:00:00
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1

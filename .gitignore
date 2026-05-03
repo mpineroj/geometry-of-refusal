@@ -1,6 +1,7 @@
 
 path-to-huggingface-cache/
 .hf_cache/
+models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

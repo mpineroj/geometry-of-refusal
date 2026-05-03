@@ -6,8 +6,8 @@ from typing import Tuple
 
 @dataclass
 class Config:
-    model_alias: str = "qwen2.5-b"
-    model_path: str = "Qwen/Qwen2.5-B-Instruct"
+    model_alias: str = "qwen2.5-3b-er"
+    model_path: str = "rpawar7156/qwen2.5-3b-er"
     n_test: int = 128
     splits: str = "saladbench"
     sample: bool = False

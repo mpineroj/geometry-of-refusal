@@ -107,9 +107,13 @@ class QwenModel(ModelBase):
         return model
 
     def _load_tokenizer(self, model_path):
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-        )
+        tokenizer_kwargs = {}
+        if model_path.lower() == "rpawar7156/qwen2.5-3b-er":
+            # This repo stores extra_special_tokens as a list, while
+            # Transformers 4.47 expects a mapping.
+            tokenizer_kwargs["extra_special_tokens"] = {}
+
+        tokenizer = AutoTokenizer.from_pretrained(model_path, **tokenizer_kwargs)
         tokenizer.padding_side = 'left'
         return tokenizer
 

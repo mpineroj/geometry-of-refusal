@@ -12,7 +12,7 @@ Usage: python smoke_test_qwen_er.py
 import torch
 import sys
 
-MODEL_PATH = "rpawar7156/qwen2.5-3b-abliterated-er"
+MODEL_PATH = "rpawar7156/qwen2.5-3b-er"
 
 EXPECTED_HIDDEN_DIM = 2048
 EXPECTED_NUM_LAYERS = 36
@@ -35,6 +35,15 @@ HARMFUL_TEST_PROMPTS = [
 passed = 0
 failed = 0
 warnings = 0
+
+
+def load_tokenizer(model_path):
+    from transformers import AutoTokenizer
+
+    # The ER repo's tokenizer_config.json may store extra_special_tokens as a
+    # list. Transformers 4.47 expects a mapping there, so override it at load
+    # time while preserving the normal Qwen tokenizer files and special tokens.
+    return AutoTokenizer.from_pretrained(model_path, extra_special_tokens={})
 
 
 def check(name, condition, detail=""):
@@ -64,8 +73,7 @@ def main():
     # 1. Load tokenizer
     # =================================================================
     print("\n[1/7] Loading tokenizer...")
-    from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    tokenizer = load_tokenizer(MODEL_PATH)
     check("Tokenizer loaded", True)
 
     # =================================================================
@@ -89,7 +97,7 @@ def main():
     print("\n[3/7] Loading model...")
     from transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_PATH, torch_dtype=torch.bfloat16, device_map="auto"
+        MODEL_PATH, torch_dtype=torch.bfloat16, device_map="auto", local_files_only=True
     ).eval()
     check("Model loaded", True)
 
@@ -144,18 +152,22 @@ def main():
 
     for prompt_text in HARMFUL_TEST_PROMPTS:
         formatted = QWEN_CHAT_TEMPLATE_WITH_SYSTEM.format(instruction=prompt_text)
-        input_ids = tokenizer(formatted, return_tensors="pt")["input_ids"].to(device)
-
+        inputs = tokenizer(formatted, return_tensors="pt").to(device)
         with torch.no_grad():
-            gen = model.generate(input_ids=input_ids, max_new_tokens=100, do_sample=False)
+            gen = model.generate(
+                    input_ids=inputs["input_ids"],
+                    attention_mask=inputs["attention_mask"],
+                    max_new_tokens=100,
+                    do_sample=False,
+                )
 
-        output = tokenizer.decode(gen[0][input_ids.shape[1]:], skip_special_tokens=True)
-        first_token_id = gen[0][input_ids.shape[1]].item()
+        output = tokenizer.decode(gen[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+        first_token_id = gen[0][inputs["input_ids"].shape[1]].item()
         first_token_str = tokenizer.decode([first_token_id])
 
         print(f"  Prompt: '{prompt_text[:60]}...'")
         print(f"  First token: ID={first_token_id}, str='{first_token_str}'")
-        print(f"  Output (first 200 chars): '{output[:200]}'")
+        print(f"  Output (full): '{output}'")
         print()
 
         first_tokens_seen.append((first_token_id, first_token_str.strip()))
@@ -170,7 +182,9 @@ def main():
     # Analyze first tokens
     print("\n  Summary of first tokens seen:")
     unique_first = set(first_tokens_seen)
+    print(f"    Unique first tokens: {len(unique_first)}")
     for tid, tstr in unique_first:
+        print(f"    ID={tid} '{tstr}'")
         count = first_tokens_seen.count((tid, tstr))
         in_refusal_toks = tid in QWEN_REFUSAL_TOKS
         print(f"    ID={tid} '{tstr}' x{count} — {'IN' if in_refusal_toks else 'NOT IN'} QWEN_REFUSAL_TOKS")

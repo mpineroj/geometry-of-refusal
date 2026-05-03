@@ -19,7 +19,7 @@ echo "=========================================="
 module purge
 module load anaconda3/2024.2
 
-conda activate rdo
+conda activate qwen-er
 
 export HF_HUB_OFFLINE=1
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"

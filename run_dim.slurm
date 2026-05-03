@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=dim-qwen3b
-#SBATCH --output=logs/dim-qwen3b-%j.out
-#SBATCH --error=logs/dim-qwen3b-%j.err
+#SBATCH --job-name=dim-qwen2.5-3b-er
+#SBATCH --output=logs/dim-qwen2.5-3b-er-%j.out
+#SBATCH --error=logs/dim-qwen2.5-3b-er-%j.err
 #SBATCH --time=03:00:00
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1
@@ -59,14 +59,14 @@ echo "Starting DIM pipeline"
 echo "=========================================="
 echo ""
 
-python pipeline/run_pipeline.py --model_path Qwen/Qwen2.5-3B-Instruct
+python pipeline/run_pipeline.py --model_path rpawar7156/qwen2.5-3b-er
 
 echo ""
 echo "=========================================="
 echo "Pipeline complete at $(date)"
 echo "=========================================="
 
-EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/completions"
+EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/rpawar7156/qwen2.5-3b-er/completions"
 if [ -d "$EVAL_DIR" ]; then
     echo ""
     echo "Results:"

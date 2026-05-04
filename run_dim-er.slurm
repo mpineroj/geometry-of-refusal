@@ -39,18 +39,8 @@ mkdir -p "${REPO_ROOT}/logs"
 
 echo ""
 echo "Pre-flight checks:"
-echo "Repo commit:"
-git -C "${REPO_ROOT}" rev-parse --short HEAD || true
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA: {torch.cuda.is_available()}, GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
-
-SELECT_DIRECTION_FILE="${REPO_ROOT}/refusal_direction/pipeline/submodules/select_direction.py"
-if grep -Fq "label=f'{i}: {repr(token_labels[i])}'" "${SELECT_DIRECTION_FILE}"; then
-    echo ""
-    echo "FATAL: stale select_direction.py detected (known plotting bug still present)."
-    echo "Update/pull repo before submitting this job."
-    exit 1
-fi
 
 echo ""
 for f in "${REPO_ROOT}/data/saladbench_splits/harmful_train.json" \
@@ -69,7 +59,7 @@ echo "Starting DIM pipeline"
 echo "=========================================="
 echo ""
 
-python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-refusal-only
+python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-explanation-only
 
 echo ""
 echo "=========================================="

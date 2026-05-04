@@ -32,12 +32,11 @@ from pipeline.submodules.select_direction import get_refusal_scores
 
 def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_path="dim_visualization.png"):
     """
-    Produce the 3-panel DIM visualization using real pipeline outputs.
+    Produce the DIM visualization using real pipeline outputs.
 
     Panels:
-      Top row   – PCA scatter showing μ_harmful and μ_harmless at 4 showcase layers,
-                  with the DIM direction arrow between them (means-only; generate_directions
-                  does not save per-prompt activations).
+      Top       – Trajectories of μ_harmful and μ_harmless across ALL layers (PCA 2D,
+                  colored by layer depth), with the selected layer's DIM arrow highlighted.
       Bottom-L  – ‖μ_harmful − μ_harmless‖ across all layers (layer selection story).
       Bottom-R  – Final DIM direction arrow at selected layer.
 
@@ -54,7 +53,7 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
     from sklearn.decomposition import PCA
 
     # if save path doesn't exist, create directory
-    os.makedirs(os.path.dirname(save_path), exist_ok=True) 
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # ── 1. Slice position → (n_layers, d_model) ───────────────────────────────
     # generate_directions always returns Tensor (n_positions, n_layers, d_model).
@@ -67,12 +66,7 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
     if selected_layer is None:
         selected_layer = int(dim_norms.argmax())
 
-    showcase_layers = [
-        0,
-        n_layers // 3,
-        2 * n_layers // 3,
-        n_layers - 1,
-    ]
+    showcase_layers = [0, n_layers // 3, 2 * n_layers // 3, n_layers - 1]
 
     # ── 2. PCA basis from mean diff vectors ───────────────────────────────────
     # generate_directions only saves mean_diffs.pt, not per-prompt activations,
@@ -89,7 +83,7 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
         half = diffs[layer].numpy() / 2
         return _proj(half), _proj(-half)
 
-    # ── 4. Draw ───────────────────────────────────────────────────────────────
+    # ── 3. Draw ───────────────────────────────────────────────────────────────
     C_HARM   = '#ff6b6b'
     C_HARM_L = '#cc0000'
     C_SAFE   = '#74b9ff'
@@ -110,49 +104,58 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
     fig.patch.set_facecolor('#0f0f0f')
     gs = gridspec.GridSpec(2, 4, figure=fig, hspace=0.55, wspace=0.35)
 
-    # Top row — scatter at showcase layers (means-only)
-    # Each panel is centered on the midpoint of its two means and padded
-    # proportionally to that layer's norm, so arrow size is comparable across panels.
-    max_norm = dim_norms.max()
+    # ── Top row: single wide panel — trajectories across ALL layers ───────────
+    ax_traj = fig.add_subplot(gs[0, :])
+    style_ax(ax_traj, 'Mean Activation Trajectories Across All Layers  (PCA 2D, colored by layer)')
 
-    for i, layer in enumerate(showcase_layers):
-        ax = fig.add_subplot(gs[0, i])
-        norm_label = f'‖Δμ‖={dim_norms[layer]:.1f}'
-        style_ax(ax, f'Layer {layer}  ({norm_label})')
+    mh_all = np.array([_mean_proj(l)[0] for l in range(n_layers)])   # (L, 2)
+    ms_all = np.array([_mean_proj(l)[1] for l in range(n_layers)])   # (L, 2)
 
-        mh, ms = _mean_proj(layer)
-        mid = (np.array(mh) + np.array(ms)) / 2
+    # Connecting lines (thin, low alpha) to show trajectory shape
+    ax_traj.plot(mh_all[:, 0], mh_all[:, 1], color=C_HARM, lw=0.6, alpha=0.3, zorder=1)
+    ax_traj.plot(ms_all[:, 0], ms_all[:, 1], color=C_SAFE, lw=0.6, alpha=0.3, zorder=1)
 
-        # Pad purely as a multiple of projected distance so the arrow fills
-        # ~40% of each panel regardless of absolute scale.
-        # Magnitude comparison is handled by the ‖Δμ‖ norm in the title.
-        dist = np.linalg.norm(np.array(mh) - np.array(ms))
-        pad = max(dist * 1.5, 0.5)
-        ax.set_xlim(mid[0] - pad, mid[0] + pad)
-        ax.set_ylim(mid[1] - pad, mid[1] + pad)
+    # Dots colored by layer depth via plasma colormap
+    sc_h = ax_traj.scatter(mh_all[:, 0], mh_all[:, 1],
+                           c=range(n_layers), cmap='plasma', s=28,
+                           edgecolors=C_HARM, linewidths=0.8, zorder=3, label='μ harmful')
+    ax_traj.scatter(ms_all[:, 0], ms_all[:, 1],
+                    c=range(n_layers), cmap='plasma', s=28,
+                    edgecolors=C_SAFE, linewidths=0.8, zorder=3,
+                    marker='s', label='μ harmless')
 
-        layer_norm = dim_norms[layer]
-        if layer_norm < 0.5:
-            ax.text(0.5, 0.5, 'near-zero\nseparation', transform=ax.transAxes,
-                    color='#888888', fontsize=8, ha='center', va='center',
-                    style='italic')
-        else:
-            ax.scatter(*mh, c=C_HARM_L, s=90,  marker='X', zorder=6,
-                       edgecolors='white', linewidths=0.6, label='μ harmful')
-            ax.scatter(*ms, c=C_SAFE_L, s=90,  marker='X', zorder=6,
-                       edgecolors='white', linewidths=0.6, label='μ harmless')
-            ax.annotate('', xy=mh, xytext=ms,
-                        arrowprops=dict(arrowstyle='->', color=C_DIM,
-                                        lw=1.8, mutation_scale=14))
+    # Highlight selected layer with bold DIM arrow
+    mh_sel, ms_sel = _mean_proj(selected_layer)
+    ax_traj.annotate('', xy=mh_sel, xytext=ms_sel,
+                     arrowprops=dict(arrowstyle='->', color=C_DIM, lw=2.5,
+                                     mutation_scale=18), zorder=5)
+    ax_traj.scatter(*mh_sel, c=C_HARM_L, s=120, marker='X', zorder=6,
+                    edgecolors='white', linewidths=0.8)
+    ax_traj.scatter(*ms_sel, c=C_SAFE_L, s=120, marker='X', zorder=6,
+                    edgecolors='white', linewidths=0.8)
+    ax_traj.text(mh_sel[0] + 0.3, mh_sel[1],
+                 f'Layer {selected_layer} (selected)', color=C_DIM, fontsize=8)
 
-        if i == 0:
-            ax.legend(fontsize=6.5, framealpha=0.3, loc='upper left',
-                      labelcolor='white', facecolor='#222222', edgecolor='#444444')
+    # Milestone layer labels on both trajectories
+    for l in showcase_layers:
+        ax_traj.text(mh_all[l, 0] + 0.15, mh_all[l, 1] + 0.15,
+                     str(l), color='#aaaaaa', fontsize=6.5, zorder=7)
+        ax_traj.text(ms_all[l, 0] + 0.15, ms_all[l, 1] + 0.15,
+                     str(l), color='#aaaaaa', fontsize=6.5, zorder=7)
+
+    cb = plt.colorbar(sc_h, ax=ax_traj, pad=0.01, fraction=0.015)
+    cb.set_label('Layer', color=C_FG, fontsize=8)
+    cb.ax.yaxis.set_tick_params(color='#666666', labelsize=7)
+    plt.setp(cb.ax.yaxis.get_ticklabels(), color='#666666')
+
+    ax_traj.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    ax_traj.legend(fontsize=8, framealpha=0.3, labelcolor='white',
+                   facecolor='#222222', edgecolor='#444444', loc='upper left')
 
     fig.text(0.005, 0.77, 'Activation Space\n(PCA 2D)', color='#888888',
              fontsize=8, va='center', ha='left')
 
-    # Bottom-left — norm across layers
+    # ── Bottom-left: norm across layers ───────────────────────────────────────
     ax_n = fig.add_subplot(gs[1, :2])
     style_ax(ax_n, '‖μ_harmful − μ_harmless‖ across layers  →  layer selection')
 
@@ -169,15 +172,14 @@ def visualize_dim_results(mean_diffs, selected_layer=None, viz_position=0, save_
                  color=C_DIM, s=80, zorder=5)
     ax_n.text(selected_layer + 0.5, dim_norms[selected_layer] * 0.93,
               f'Selected: layer {selected_layer}', color=C_DIM, fontsize=8)
-    # Annotate that selection is by KL+ASR criteria, not just argmax norm
-    ax_n.text(0.02, 0.04,
+    ax_n.text(0.15, 0.06,
               'Selected by: ablation ASR + actadd ASR + KL ≤ threshold  (not argmax norm)',
               transform=ax_n.transAxes, color='#888888', fontsize=7,
               ha='left', va='bottom', style='italic')
     ax_n.set_xlabel('Layer', color='#888888', fontsize=9)
     ax_n.set_ylabel('Vector norm', color='#888888', fontsize=9)
 
-    # Bottom-right — final direction
+    # ── Bottom-right: final direction at selected layer ────────────────────────
     ax_d = fig.add_subplot(gs[1, 2:])
     style_ax(ax_d, f'DIM Direction  r = μ_harmful − μ_harmless   (Layer {selected_layer})')
 
@@ -398,7 +400,7 @@ def main():
             mean_diffs=mean_diffs,
             selected_layer=args.selected_layer,
             viz_position=args.viz_position,
-            save_path= "results/dim_visualization_" + model_alias + ".png"
+            save_path="results/dim_visualization_" + model_alias + ".png"
         )
 
     # ==================================================================
@@ -412,7 +414,7 @@ def main():
   Dataset loading:           OK
   Refusal score computation: OK
   Direction generation:      OK ({n_candidates} candidates)
-  Visualization:             {'OK → ' + os.path.join(artifact_dir, 'dim_visualization.png') if args.viz else 'SKIPPED (use --viz)'}
+  Visualization:             {'OK → results/dim_visualization_' + model_alias + '.png' if args.viz else 'SKIPPED (use --viz)'}
 
   Skipped (expensive): direction selection, completion generation, evaluation.
   These test ~{n_candidates} candidates x 128 val prompts each -> run on Adroit.

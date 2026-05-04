@@ -95,11 +95,15 @@ def act_add_qwen_weights(model, direction: Float[Tensor, "d_model"], coeff, laye
 class QwenModel(ModelBase):
 
     def _load_model(self, model_path, dtype=torch.bfloat16):
+        # Check if model_path is a local directory
+        is_local = os.path.isdir(model_path)
+        
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=dtype,
             device_map="auto",
-            cache_dir=os.getenv("HUGGINGFACE_CACHE_DIR"),
+            cache_dir=os.getenv("HUGGINGFACE_CACHE_DIR") if not is_local else None,
+            local_files_only=is_local,
         ).eval()
 
         model.requires_grad_(False) 
@@ -112,6 +116,10 @@ class QwenModel(ModelBase):
             # This repo stores extra_special_tokens as a list, while
             # Transformers 4.47 expects a mapping.
             tokenizer_kwargs["extra_special_tokens"] = {}
+
+        # Check if model_path is a local directory
+        is_local = os.path.isdir(model_path)
+        tokenizer_kwargs["local_files_only"] = is_local
 
         tokenizer = AutoTokenizer.from_pretrained(model_path, **tokenizer_kwargs)
         tokenizer.padding_side = 'left'

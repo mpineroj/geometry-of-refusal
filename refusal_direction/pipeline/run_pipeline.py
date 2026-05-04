@@ -21,6 +21,7 @@ def parse_arguments():
     load_dotenv("..", override=True)
     parser = argparse.ArgumentParser(description="Parse model path argument.")
     parser.add_argument('--model_path', type=str, required=True, help='Path to the model')
+    parser.add_argument('--no_filter', action='store_true', help='Disable refusal-score filtering')
     return parser.parse_args()
 
 def load_and_sample_datasets(cfg):
@@ -143,10 +144,14 @@ def evaluate_loss_for_datasets(cfg, model_base, fwd_pre_hooks, fwd_hooks, interv
     with open(f'{cfg.artifact_path()}/loss_evals/{intervention_label}_loss_eval.json', "w") as f:
         json.dump(loss_evals, f, indent=4)
 
-def run_pipeline(model_path):
+def run_pipeline(model_path, no_filter=False):
     """Run the full pipeline."""
     model_alias = os.path.basename(model_path)
     cfg = Config(model_alias=model_alias, model_path=model_path)
+
+    if no_filter:
+        cfg.filter_train = False
+        cfg.filter_val = False
 
     model_base = construct_model_base(cfg.model_path)
 
@@ -197,4 +202,4 @@ def run_pipeline(model_path):
 
 if __name__ == "__main__":
     args = parse_arguments()
-    run_pipeline(model_path=args.model_path)
+    run_pipeline(model_path=args.model_path, no_filter=args.no_filter)

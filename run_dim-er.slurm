@@ -59,7 +59,7 @@ echo "Starting DIM pipeline"
 echo "=========================================="
 echo ""
 
-python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-fullweight
+python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-fullweight --no_filter
 
 echo ""
 echo "=========================================="

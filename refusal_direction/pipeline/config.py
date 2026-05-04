@@ -12,8 +12,8 @@ class Config:
     splits: str = "saladbench"
     sample: bool = False
     kl_threshold: float = 1
-    filter_train: bool = True
-    filter_val: bool = True
+    filter_train: bool = False
+    filter_val: bool = False
     # evaluation_datasets: Tuple[str] = ("jailbreakbench", "strongreject", "sorrybench", "xstest")
     evaluation_datasets: Tuple[str] = ("jailbreakbench",)
     evaluate_ablation: bool = True

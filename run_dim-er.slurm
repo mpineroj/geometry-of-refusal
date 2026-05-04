@@ -59,14 +59,14 @@ echo "Starting DIM pipeline"
 echo "=========================================="
 echo ""
 
-python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-fullweight-justification-only --no_filter
+python pipeline/run_pipeline.py --model_path /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-fullweight-explanation-only --no_filter
 
 echo ""
 echo "=========================================="
 echo "Pipeline complete at $(date)"
 echo "=========================================="
 
-EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/Qwen/Qwen2.5-3B-Instruct-ER-fullweight/completions"
+EVAL_DIR="${REPO_ROOT}/${SAVE_DIR}/${DIM_DIR}/Qwen/Qwen2.5-3B-Instruct-ER-fullweight-explanation-only/completions"
 if [ -d "$EVAL_DIR" ]; then
     echo ""
     echo "Results:"

@@ -18,7 +18,7 @@ echo "=========================================="
 module purge
 module load anaconda3/2024.2
 
-conda activate rdo
+conda activate new-rdo
 
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
 export HF_HOME="${HUGGINGFACE_CACHE_DIR}"
@@ -40,15 +40,14 @@ echo "=========================================="
 echo ""
 
 python rdo_repind.py \
-    --model Qwen/Qwen2.5-3B-Instruct \
+    --model /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-fullweight \
     --train_independent_direction \
     --epochs 2 \
     --lr 0.01 \
     --batch_size 1 \
     --effective_batch_size 16 \
     --patience 5 \
-    --n_lr_reduce 2 \
-    --filter_data
+    --n_lr_reduce 2
 
 echo ""
 echo "=========================================="

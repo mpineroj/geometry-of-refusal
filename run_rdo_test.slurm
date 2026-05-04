@@ -18,7 +18,7 @@ echo "=========================================="
 module purge
 module load anaconda3/2024.2
 
-conda activate rdo-new
+conda activate new-rdo
 
 # HF_HUB_OFFLINE disabled — nnsight needs cache lookup without strict offline mode
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
@@ -76,9 +76,7 @@ python rdo.py \
     --epochs 1 \
     --effective_batch_size 2 \
     --patience 1 \
-    --n_lr_reduce 0 \
-    --filter_data
-
+    --n_lr_reduce 0
 echo ""
 echo "=========================================="
 echo "RDO test complete at $(date)"

@@ -43,9 +43,9 @@ python -c "import wandb; print(f'wandb OK')"
 
 echo ""
 echo "Checking DIM artifacts:"
-for f in "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/direction.pt" \
-         "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/direction_metadata.json" \
-         "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct/generate_directions/mean_diffs.pt"; do
+for f in "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct-ER-justification-only/direction.pt" \
+         "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct-ER-justification-only/direction_metadata.json" \
+         "${SAVE_DIR}/${DIM_DIR}/Qwen2.5-3B-Instruct-ER-justification-only/generate_directions/mean_diffs.pt"; do
     if [ -f "$f" ]; then
         echo "  OK: $f"
     else
@@ -71,7 +71,7 @@ echo "=========================================="
 echo ""
 
 python rdo.py \
-    --model Qwen/Qwen2.5-3B-Instruct \
+    --model /scratch/network/mp3687/models/Qwen2.5-3B-Instruct-ER-justification-only \
     --train_direction \
     --epochs 1 \
     --effective_batch_size 2 \

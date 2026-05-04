@@ -18,7 +18,7 @@ echo "=========================================="
 module purge
 module load anaconda3/2024.2
 
-conda activate qwen-er
+conda activate rdo
 
 # HF_HUB_OFFLINE disabled — nnsight needs cache lookup without strict offline mode
 export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"

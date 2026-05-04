@@ -1,0 +1,30 @@
+[
+    {
+        "position": -1,
+        "layer": 25,
+        "refusal_score": 0.3400307297706604,
+        "steering_score": 0.2410506159067154,
+        "kl_div_score": 0.5367056458358267
+    },
+    {
+        "position": -5,
+        "layer": 24,
+        "refusal_score": 0.4607531726360321,
+        "steering_score": 1.247321605682373,
+        "kl_div_score": 0.6967891255520757
+    },
+    {
+        "position": -4,
+        "layer": 25,
+        "refusal_score": 0.4875645041465759,
+        "steering_score": 0.3406669795513153,
+        "kl_div_score": 0.3830311889391675
+    },
+    {
+        "position": -5,
+        "layer": 23,
+        "refusal_score": 1.009824275970459,
+        "steering_score": 1.142939567565918,
+        "kl_div_score": 0.6352891294189307
+    }
+]

@@ -83,7 +83,7 @@ def upload(model_path: str = ""):
 # ── Main pipeline function ──────────────────────────────────
 @app.function(
     image=image,
-    gpu="A100",
+    gpu="A100-80GB",
     volumes={VOL_PATH: vol},
     timeout=36000,  # 10 hours max
 )

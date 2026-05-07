@@ -317,7 +317,57 @@ def select_direction(
     with open(f"{artifact_dir}/direction_evaluations_filtered.json", 'w') as f:
         json.dump(json_output_filtered_scores, f, indent=4)
 
-    assert len(filtered_scores) > 0, "All scores have been filtered out!"
+    if len(filtered_scores) == 0:
+        print("WARNING: Refusal-token filtering removed all directions. Falling back to norm-based selection with KL filter.")
+
+        best_score = -float("inf")
+        best_pos = -n_pos
+        best_layer = 0
+
+        for source_pos in range(-n_pos, 0):
+            for source_layer in range(n_layer):
+                kl_value = ablation_kl_div_scores[source_pos, source_layer].item()
+                if kl_threshold is not None and kl_value > kl_threshold:
+                    continue
+
+                # Use direction norm as a proxy for signal strength.
+                direction_norm = candidate_directions[source_pos, source_layer].float().norm().item()
+                if direction_norm > best_score:
+                    best_score = direction_norm
+                    best_pos = source_pos
+                    best_layer = source_layer
+
+        if best_score == -float("inf"):
+            print("No direction passed the KL filter in fallback. Taking globally lowest KL direction.")
+            best_kl = float("inf")
+            for source_pos in range(-n_pos, 0):
+                for source_layer in range(n_layer):
+                    kl_value = ablation_kl_div_scores[source_pos, source_layer].item()
+                    if kl_value < best_kl:
+                        best_kl = kl_value
+                        best_pos = source_pos
+                        best_layer = source_layer
+
+        best_direction = candidate_directions[best_pos, best_layer]
+        best_kl = ablation_kl_div_scores[best_pos, best_layer].item()
+        best_norm = best_direction.float().norm().item()
+
+        print(f"Fallback selected direction: position={best_pos}, layer={best_layer}, KL={best_kl:.4f}, norm={best_norm:.4f}")
+
+        with open(f"{artifact_dir}/selection_metadata.json", "w") as f:
+            json.dump(
+                {
+                    "position": int(best_pos),
+                    "layer": int(best_layer),
+                    "kl_div_score": float(best_kl),
+                    "direction_norm": float(best_norm),
+                    "fallback": True,
+                },
+                f,
+                indent=4,
+            )
+
+        return best_pos, best_layer, best_direction
 
     # sorted in descending order
     filtered_scores = sorted(filtered_scores, key=lambda x: x[0], reverse=True)

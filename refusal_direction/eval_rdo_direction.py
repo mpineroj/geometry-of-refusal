@@ -9,6 +9,13 @@ Usage (from refusal_direction/):
         --model_path Qwen/Qwen2.5-3B-Instruct \
         --vector_path ../results/rdo/Qwen2.5-3B-Instruct/vectors/lowest_loss_vector_7ifl0hjw.pt \
         --dim_metadata_path ../results/dim_directions/Qwen2.5-3B-Instruct/direction_metadata.json
+
+    # For cone basis vectors:
+    python eval_rdo_direction.py \
+        --model_path Qwen/Qwen2.5-3B-Instruct \
+        --vector_path ../results/rdo/Qwen2.5-3B-Instruct/vectors/lowest_loss_vector_abc123.pt \
+        --dim_metadata_path ../results/dim_directions/Qwen2.5-3B-Instruct/direction_metadata.json \
+        --basis_idx 0
 """
 
 import torch
@@ -38,6 +45,8 @@ def parse_args():
                         help='Path to DIM direction_metadata.json (for layer info)')
     parser.add_argument('--output_dir', type=str, default=None,
                         help='Directory to save results (default: next to vector)')
+    parser.add_argument('--basis_idx', type=int, default=None,
+                        help='For cone vectors: which basis vector to evaluate (0-indexed)')
     return parser.parse_args()
 
 
@@ -49,9 +58,9 @@ def main():
     print(f"Loading RDO direction from: {args.vector_path}")
     direction = torch.load(args.vector_path, map_location='cpu')
     if direction.dim() > 1:
-        # If it's a cone basis, take the first vector for single-direction eval
-        print(f"  Vector shape: {direction.shape} — using first vector")
-        direction = direction[0]
+        idx = args.basis_idx if args.basis_idx is not None else 0
+        print(f"  Cone shape: {direction.shape} — evaluating basis vector {idx}")
+        direction = direction[idx]
     print(f"  Direction shape: {direction.shape}, norm: {direction.float().norm():.4f}")
 
     # Load DIM metadata for layer info
@@ -61,10 +70,13 @@ def main():
     add_layer = metadata["layer"]
     print(f"  Using layer: {add_layer}")
 
-    # Setup output directory — unique per vector file
+    # Setup output directory — unique per vector file and basis index
     if args.output_dir is None:
         vector_name = os.path.splitext(os.path.basename(args.vector_path))[0]
-        args.output_dir = os.path.join(os.path.dirname(args.vector_path), f"eval_{vector_name}")
+        suffix = f"_basis{args.basis_idx}" if args.basis_idx is not None else ""
+        args.output_dir = os.path.join(os.path.dirname(args.vector_path), f"eval_{vector_name}{suffix}")
+    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, "completions"), exist_ok=True)
 
     # Load model
     model_alias = os.path.basename(args.model_path)
@@ -85,8 +97,7 @@ def main():
     alpha = dim_direction.norm().item()
     print(f"  Alpha (DIM direction norm): {alpha:.4f}")
 
-   
-   # Setup hooks
+    # Setup hooks
     baseline_hooks = ([], [])
     ablation_hooks = get_all_direction_ablation_hooks(model_base, direction)
     actadd_hooks = (
@@ -94,7 +105,6 @@ def main():
         get_activation_addition_input_pre_hook(vector=direction * alpha, coeff=-1.0))],
         []
     )
-
 
     # Generate completions for each intervention
     interventions = {
@@ -148,6 +158,7 @@ def main():
     summary = {
         "model": args.model_path,
         "vector_path": args.vector_path,
+        "basis_idx": args.basis_idx,
         "layer": add_layer,
         "direction_norm": direction.float().norm().item(),
         "results": results,

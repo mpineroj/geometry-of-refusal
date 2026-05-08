@@ -3,7 +3,10 @@ import json
 import os
 import numpy as np
 import wandb
-from strong_reject.evaluate import evaluate_dataset
+try:
+    from strong_reject.evaluate import evaluate_dataset
+except ImportError:
+    evaluate_dataset = None
 from datasets import Dataset
 
 # based on https://github.com/JailbreakBench/jailbreakbench/blob/4dbcc097739dd684fbf789cc3d4f97372bd72851/src/jailbreakbench/classifier.py

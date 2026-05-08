@@ -2,6 +2,10 @@
 path-to-huggingface-cache/
 .hf_cache/
 models
+temp_check/
+results/
+results_from_modal/
+dim_results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

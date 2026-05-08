@@ -72,7 +72,7 @@ class ModelBase(ABC):
 
         completions = []
         instructions = [x['instruction'] for x in dataset]
-        categories = [x['category'] for x in dataset]
+        categories = [x.get('category', 'unknown') for x in dataset]
 
         def try_batch_inference(batch_size):
             test_batch_end = min(batch_size, len(dataset))

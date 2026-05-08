@@ -42,7 +42,13 @@ image = (
         "einops",
         "scipy",
         "numpy",
+        "matplotlib",
+        "seaborn",
+        "pandas",
     )
+    .apt_install("git")
+    .pip_install("torch==2.5.1", "transformers==4.44.0", "pandas", "datasets", "numpy")
+    .run_commands("pip install git+https://github.com/dsbowen/strong_reject.git@main")
 )
 
 
@@ -87,12 +93,13 @@ def upload(model_path: str = ""):
     volumes={VOL_PATH: vol},
     timeout=36000,  # 10 hours max
 )
-def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = False, skip_repind: bool = False):
+def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = False, skip_repind: bool = False, skip_dim: bool = False):
     """
     Run RDO + Cones + RepInd for a single model.
     
     Args:
         model_name: e.g. "Qwen2.5-3B-Instruct-ER-fullweight"
+        skip_dim: skip DIM direction extraction (use existing direction.pt and metadata)
         skip_rdo: skip RDO training
         skip_cones: skip cone training
         skip_repind: skip RepInd training
@@ -113,8 +120,6 @@ def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = Fal
     print("=" * 60)
     
     dim_dir = f"{VOL_PATH}/results/dim_directions/{model_name}"
-    assert os.path.exists(f"{dim_dir}/direction.pt"), f"DIM direction not found at {dim_dir}"
-    assert os.path.exists(f"{dim_dir}/direction_metadata.json"), f"DIM metadata not found at {dim_dir}"
     assert os.path.exists(model_path), f"Model not found at {model_path}"
     print("Pre-flight checks passed")
     
@@ -126,9 +131,9 @@ def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = Fal
         "TRANSFORMERS_CACHE": f"{VOL_PATH}/cache",
         "SAVE_DIR": f"{VOL_PATH}/results",
         "DIM_DIR": "dim_directions",
-        "WANDB_MODE": "offline",
+        "WANDB_MODE": "online",
         "WANDB_DIR": f"{VOL_PATH}/results/wandb",
-        "PYTHONPATH": repo_dir,
+        "PYTHONPATH": f"{repo_dir}/refusal_direction:{repo_dir}",
     })
     
     os.makedirs(f"{VOL_PATH}/results/wandb", exist_ok=True)
@@ -140,7 +145,7 @@ def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = Fal
         f.write(f'DIM_DIR="dim_directions"\n')
         f.write(f'WANDB_ENTITY="mpinero-princeton-university"\n')
         f.write(f'WANDB_PROJECT="refusal_directions"\n')
-        f.write(f'WANDB_MODE=offline\n')
+        f.write(f'WANDB_MODE=online\n')
     
     def run_cmd(cmd, label):
         print(f"\n{'=' * 60}")
@@ -156,12 +161,35 @@ def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = Fal
             print(f"WARNING: {label} exited with code {result.returncode}")
         return result.returncode
     
+    # ── 0. DIM direction ────────────────────────────────────
+    dim_dir = f"{VOL_PATH}/results/dim_directions/{model_name}"
+    dim_exists = os.path.exists(f"{dim_dir}/direction.pt") and os.path.exists(f"{dim_dir}/direction_metadata.json")
+    
+    if not skip_dim:
+
+        if dim_exists:
+            print(f"DIM direction already exists for {model_name}, overwriting with new one")
+        else:
+            print(f"No existing DIM direction found for {model_name}, extracting new one")
+
+        run_cmd(
+            f"cd {repo_dir}/refusal_direction && "
+            f"python pipeline/run_pipeline.py "
+            f"--model_path {model_path} "
+            f"--no_filter",
+            "[0/3] DIM direction extraction"
+        )
+
     # ── 1. RDO ──────────────────────────────────────────────
     if not skip_rdo:
+        assert os.path.exists(f"{dim_dir}/direction.pt"), f"DIM direction not found at {dim_dir}"
+        assert os.path.exists(f"{dim_dir}/direction_metadata.json"), f"DIM metadata not found at {dim_dir}"
+    
         run_cmd(
-            f"python rdo.py "
+              f"python rdo.py "
             f"--model {model_path} "
             f"--train_direction "
+            f"--target_generation_batch_size 32 "
             f"--epochs 1 --lr 0.01 --batch_size 1 --effective_batch_size 16 "
             f"--patience 5 --n_lr_reduce 2 "
             f"--ablation_lambda 1.0 --addition_lambda 0.2 --retain_lambda 1.0",
@@ -170,24 +198,32 @@ def run_pipeline(model_name: str, skip_rdo: bool = False, skip_cones: bool = Fal
     
     # ── 2. Cones ────────────────────────────────────────────
     if not skip_cones:
+        assert os.path.exists(f"{dim_dir}/direction.pt"), f"DIM direction not found at {dim_dir}"
+        assert os.path.exists(f"{dim_dir}/direction_metadata.json"), f"DIM metadata not found at {dim_dir}"
+    
         run_cmd(
             f"python rdo.py "
             f"--model {model_path} "
             f"--train_cone "
-            f"--min_cone_dim 2 --max_cone_dim 6 "
+            f"--target_generation_batch_size 32 "
+            f"--min_cone_dim 2 --max_cone_dim 3 "
             f"--epochs 1 --lr 0.01 --batch_size 1 --effective_batch_size 16 "
             f"--patience 5 --n_lr_reduce 2 "
             f"--ablation_lambda 1.0 --addition_lambda 0.2 --retain_lambda 1.0 "
             f"--n_sample 8 --fixed_samples 8",
-            "[2/3] Cone training (dim 2-6)"
+            "[2/3] Cone training (dim 2-3)"
         )
     
     # ── 3. RepInd ───────────────────────────────────────────
     if not skip_repind:
+        assert os.path.exists(f"{dim_dir}/direction.pt"), f"DIM direction not found at {dim_dir}"
+        assert os.path.exists(f"{dim_dir}/direction_metadata.json"), f"DIM metadata not found at {dim_dir}"
+    
         run_cmd(
             f"python rdo_repind.py "
             f"--model {model_path} "
             f"--train_independent_direction "
+            f"--target_generation_batch_size 32 "
             f"--epochs 2 --lr 0.01 --batch_size 1 --effective_batch_size 16 "
             f"--patience 5 --n_lr_reduce 2",
             "[3/3] RepInd training"
@@ -224,6 +260,7 @@ def download_results(model_name: str):
 @app.local_entrypoint()
 def main(
     model_name: str = "Qwen2.5-3B-Instruct-ER-fullweight",
+    skip_dim: bool = False,
     skip_rdo: bool = False,
     skip_cones: bool = False,
     skip_repind: bool = False,
@@ -232,11 +269,12 @@ def main(
     Run the full pipeline from the command line.
     
     Usage:
-      modal run modal_geometry.py --model-name Qwen2.5-3B-Instruct-ER-fullweight
+      modal run modal_geometry.py --model-name Qwen2.5-3B-Instruct-ER-fullweight    
       modal run modal_geometry.py --model-name Qwen2.5-3B-Instruct-ER-fullweight --skip-repind
     """
     run_pipeline.remote(
         model_name=model_name,
+        skip_dim=skip_dim,
         skip_rdo=skip_rdo,
         skip_cones=skip_cones,
         skip_repind=skip_repind,

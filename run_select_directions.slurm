@@ -7,7 +7,13 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=gpu
-#SBATCH --constraint=gpu80
+#SBATCH --constraint=a100|v100
+#
+# GPU options — override at submission time with sbatch flags:
+#   Full A100-80GB (adroit-h11g1):  sbatch --gres=gpu:1            --constraint=gpu80      ...
+#   A100 MIG 20GB  (adroit-h11g2):  sbatch --gres=gpu:3g.20gb:1    --constraint=a100       ...
+#   V100-32GB      (adroit-h11g3):  sbatch --gres=gpu:1            --constraint=v100       ...
+# Note: V100 lacks native bfloat16 compute; PyTorch upcasts to float32 — slower but correct.
 
 # ============================================================
 # Validation-based re-selection of RDO/cone candidate pools.

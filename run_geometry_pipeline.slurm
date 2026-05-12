@@ -64,7 +64,7 @@ echo "=========================================="
 # ── Modules + conda ─────────────────────────────────────────
 module purge
 module load anaconda3/2024.2
-conda activate rdo
+conda activate new-rdo
 
 REPO_DIR="/home/${USER}/geometry-of-refusal"
 cd "${REPO_DIR}"
@@ -74,7 +74,7 @@ export HUGGINGFACE_CACHE_DIR="/scratch/network/${USER}/.cache/huggingface"
 export HF_HOME="${HUGGINGFACE_CACHE_DIR}"
 export TRANSFORMERS_CACHE="${HUGGINGFACE_CACHE_DIR}"
 
-export SAVE_DIR="results"
+export SAVE_DIR="geometry_results_final/results"
 export DIM_DIR="dim_directions"
 
 # Modal uses online wandb; flip to "offline" if Adroit compute nodes

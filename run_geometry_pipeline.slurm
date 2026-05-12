@@ -29,13 +29,14 @@
 set -u
 
 # ── Parse args ──────────────────────────────────────────────
-MODEL_PATH="${1:?Usage: sbatch run_geometry_pipeline.slurm <model_path> [--skip-dim] [--skip-rdo] [--skip-cones] [--skip-repind]}"
+MODEL_PATH="${1:?Usage: sbatch run_geometry_pipeline.slurm <model_path> [--skip-dim] [--skip-rdo] [--skip-cones] [--skip-repind] [--dim-name <name>]}"
 shift
 
 SKIP_DIM=0
 SKIP_RDO=0
 SKIP_CONES=0
 SKIP_REPIND=0
+DIM_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -43,17 +44,21 @@ while [[ $# -gt 0 ]]; do
         --skip-rdo)    SKIP_RDO=1;    shift ;;
         --skip-cones)  SKIP_CONES=1;  shift ;;
         --skip-repind) SKIP_REPIND=1; shift ;;
+        --dim-name)    DIM_NAME="$2"; shift 2 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
 MODEL_NAME=$(basename "${MODEL_PATH}")
+# DIM_NAME defaults to MODEL_NAME when not explicitly set
+DIM_NAME="${DIM_NAME:-${MODEL_NAME}}"
 
 echo "=========================================="
 echo "Job ID:       $SLURM_JOB_ID"
 echo "Node:         $SLURM_NODELIST"
 echo "Model:        $MODEL_NAME"
 echo "Model path:   $MODEL_PATH"
+echo "DIM name:     $DIM_NAME"
 echo "Skip DIM:     $SKIP_DIM"
 echo "Skip RDO:     $SKIP_RDO"
 echo "Skip Cones:   $SKIP_CONES"
@@ -110,7 +115,7 @@ if [ ! -d "${MODEL_PATH}" ]; then
 fi
 echo "Model: OK (${MODEL_PATH})"
 
-DIM_PATH="${SAVE_DIR}/${DIM_DIR}/${MODEL_NAME}"
+DIM_PATH="${SAVE_DIR}/${DIM_DIR}/${DIM_NAME}"
 
 # ── 0. DIM direction extraction ─────────────────────────────
 if [ "${SKIP_DIM}" -eq 0 ]; then

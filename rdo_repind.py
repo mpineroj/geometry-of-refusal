@@ -140,7 +140,10 @@ def parse_args():
                     help='Batch size for filtering data')
     parser.add_argument('--splits', type=str, default=DEFAULT_CONFIG['splits'],
                     help='Dataset split to use')
-    
+    parser.add_argument('--dim-name', type=str, default=None,
+                    help='Name of the DIM direction subdirectory (default: basename of --model). '
+                         'Use when model dir name differs from the dim_directions/ subfolder name.')
+
     return parser.parse_args()
 
 args = parse_args()
@@ -171,7 +174,8 @@ with model.trace("Hello") as tracer:
 
 # %%
 model_id = MODEL_PATH.split("/")[-1]
-dim_dir_path = f"{os.getenv('SAVE_DIR')}/{os.getenv('DIM_DIR')}/{model_id}"
+dim_name = args.dim_name if args.dim_name else model_id
+dim_dir_path = f"{os.getenv('SAVE_DIR')}/{os.getenv('DIM_DIR')}/{dim_name}"
 direction_file = f"{dim_dir_path}/direction.pt"
 metadata_file = f"{dim_dir_path}/direction_metadata.json"
 mean_diffs_file = f"{dim_dir_path}/generate_directions/mean_diffs.pt"

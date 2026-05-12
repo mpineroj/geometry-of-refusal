@@ -227,6 +227,7 @@ if [ "${SKIP_REPIND}" -eq 0 ]; then
 
     python rdo_repind.py \
         --model "${MODEL_PATH}" \
+        --dim-name "${DIM_NAME}" \
         --train_independent_direction \
         --target_generation_batch_size 32 \
         --epochs 2 \

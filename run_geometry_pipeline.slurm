@@ -179,11 +179,11 @@ else
     echo "Skipping [1/3] RDO direction"
 fi
 
-# ── 2. Refusal cones (dim 2-3) ──────────────────────────────
+# ── 2. Refusal cones ──────────────────────────────
 if [ "${SKIP_CONES}" -eq 0 ]; then
     echo ""
     echo "=========================================="
-    echo "[2/3] Cone training (dim 2-3) — $(date)"
+    echo "[2/3] Cone training (2-5) — $(date)"
     echo "=========================================="
     echo ""
 
@@ -192,7 +192,7 @@ if [ "${SKIP_CONES}" -eq 0 ]; then
         --train_cone \
         --target_generation_batch_size 32 \
         --min_cone_dim 2 \
-        --max_cone_dim 3 \
+        --max_cone_dim 5 \
         --epochs 1 \
         --lr 0.01 \
         --batch_size 1 \

@@ -1492,6 +1492,7 @@ if args.train_independent_direction:
 
             lowest_loss_vector = results['lowest_loss_vector']
             lowest_loss_vectors.append(lowest_loss_vector)
+            torch.cuda.empty_cache()
             refusal_scores = get_bypass_scores(model, harmful_val_instructions, refusal_tokens, fn_vector=lowest_loss_vector, batch_size=args.filter_batch_size)
             mean_refusal_score = refusal_scores.mean().item()
             mean_refusal_scores.append(mean_refusal_score)

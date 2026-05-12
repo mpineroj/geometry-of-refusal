@@ -1,0 +1,11 @@
+{
+    "model": "Qwen/Qwen2.5-3B-Instruct",
+    "vector_path": "/home/mp3687/geometry-of-refusal/results/rdo/Qwen2.5-3B-Instruct/vectors/lowest_loss_vector_7ifl0hjw.pt",
+    "layer": 22,
+    "direction_norm": 0.9999659657478333,
+    "results": {
+        "baseline": 0.11,
+        "ablation": 0.95,
+        "actadd": 0.99
+    }
+}

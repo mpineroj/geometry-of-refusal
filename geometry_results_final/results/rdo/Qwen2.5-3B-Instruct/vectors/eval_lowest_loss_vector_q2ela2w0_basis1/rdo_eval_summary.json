@@ -1,0 +1,12 @@
+{
+    "model": "/vol/models/Qwen2.5-3B-Instruct",
+    "vector_path": "/vol/results/rdo/Qwen2.5-3B-Instruct/vectors/lowest_loss_vector_q2ela2w0.pt",
+    "basis_idx": 1,
+    "layer": 22,
+    "direction_norm": 0.9999547004699707,
+    "results": {
+        "baseline": 0.11,
+        "ablation": 0.67,
+        "actadd": 0.99
+    }
+}

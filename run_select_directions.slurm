@@ -2,17 +2,12 @@
 #SBATCH --job-name=select-directions
 #SBATCH --output=logs/select-directions-%j.out
 #SBATCH --error=logs/select-directions-%j.err
-#SBATCH --time=08:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
-#SBATCH --constraint=a100|v100
-#
-# GPU options — override at submission time with sbatch flags:
-#   Full A100-80GB (adroit-h11g1):  sbatch --gres=gpu:1            --constraint=gpu80      ...
-#   A100 MIG 20GB  (adroit-h11g2):  sbatch --gres=gpu:3g.20gb:1    --constraint=a100       ...
-#   V100-32GB      (adroit-h11g3):  sbatch --gres=gpu:1            --constraint=v100       ...
-# Note: V100 lacks native bfloat16 compute; PyTorch upcasts to float32 — slower but correct.
+#SBATCH --partition=gpu
+#SBATCH --constraint=gpu80
 
 # ============================================================
 # Validation-based re-selection of RDO/cone candidate pools.
@@ -39,12 +34,11 @@
 set -euo pipefail
 
 # ── Parse args ───────────────────────────────────────────────
-MODEL_NAME="${1:?Usage: sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing] [--induce-threshold <float>]}"
+MODEL_NAME="${1:?Usage: sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing]}"
 shift
 
 RUN_ID_ARG=""
 SKIP_EXISTING_ARG=""
-INDUCE_THRESHOLD_ARG="--induce_threshold 0.0"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -56,10 +50,6 @@ while [[ $# -gt 0 ]]; do
             SKIP_EXISTING_ARG="--skip_existing"
             shift
             ;;
-        --induce-threshold)
-            INDUCE_THRESHOLD_ARG="--induce_threshold ${2:?--induce-threshold requires a value}"
-            shift 2
-            ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -70,6 +60,8 @@ MODEL_PATH_MAP["Qwen2.5-full-lora"]="/scratch/network/${USER}/models/Qwen2.5-3B-
 MODEL_PATH_MAP["Qwen2.5-refusal-only-lora"]="/scratch/network/${USER}/models/Qwen2.5-3B-Instruct-ER-fullweight-refusal-only"
 MODEL_PATH_MAP["Qwen2.5-explanation-only-lora"]="/scratch/network/${USER}/models/Qwen2.5-3B-Instruct-ER-fullweight-explanation-only"
 MODEL_PATH_MAP["Qwen2.5-justification-only-lora"]="/scratch/network/${USER}/models/Qwen2.5-3B-Instruct-ER-fullweight-justification-only"
+MODEL_PATH_MAP["Qwen2.5-3B-Instruct"]="/scratch/network/${USER}/models/Qwen2.5-3B-Instruct"
+
 
 if [[ -z "${MODEL_PATH_MAP[$MODEL_NAME]+x}" ]]; then
     echo "ERROR: Unknown model_name '${MODEL_NAME}'."
@@ -90,7 +82,6 @@ echo "Model path:   $MODEL_PATH"
 echo "Results dir:  $RESULTS_DIR"
 echo "Run ID filter:${RUN_ID_ARG:-  (all runs)}"
 echo "Skip existing:${SKIP_EXISTING_ARG:-  no}"
-echo "Induce thresh:${INDUCE_THRESHOLD_ARG}"
 echo "Start time:   $(date)"
 echo "=========================================="
 
@@ -202,7 +193,6 @@ python select_rdo_directions.py \
     --kl_threshold 1.0 \
     --batch_size   32 \
     --n_samples    8 \
-    ${INDUCE_THRESHOLD_ARG} \
     ${RUN_ID_ARG} \
     ${SKIP_EXISTING_ARG}
 

@@ -2,7 +2,7 @@
 #SBATCH --job-name=select-directions
 #SBATCH --output=logs/select-directions-%j.out
 #SBATCH --error=logs/select-directions-%j.err
-#SBATCH --time=06:00:00
+#SBATCH --time=08:00:00
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4

@@ -17,7 +17,7 @@
 # geometry_results_final/results/rdo/<model_name>/selected/.
 #
 # Usage:
-#   sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing]
+#   sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing] [--induce-threshold <float>]
 #
 # <model_name> is the short name used inside geometry_results_final:
 #   Qwen2.5-full-lora
@@ -34,11 +34,12 @@
 set -euo pipefail
 
 # ── Parse args ───────────────────────────────────────────────
-MODEL_NAME="${1:?Usage: sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing]}"
+MODEL_NAME="${1:?Usage: sbatch run_select_directions.slurm <model_name> [--run-id <run_id>] [--skip-existing] [--induce-threshold <float>]}"
 shift
 
 RUN_ID_ARG=""
 SKIP_EXISTING_ARG=""
+INDUCE_THRESHOLD_ARG="--induce_threshold 0.0"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
         --skip-existing)
             SKIP_EXISTING_ARG="--skip_existing"
             shift
+            ;;
+        --induce-threshold)
+            INDUCE_THRESHOLD_ARG="--induce_threshold ${2:?--induce-threshold requires a value}"
+            shift 2
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
@@ -193,6 +198,7 @@ python select_rdo_directions.py \
     --kl_threshold 1.0 \
     --batch_size   32 \
     --n_samples    8 \
+    ${INDUCE_THRESHOLD_ARG} \
     ${RUN_ID_ARG} \
     ${SKIP_EXISTING_ARG}
 
